@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Camper Bypass + Luarmor Stealth
+// @name         Camper Bypass
 // @namespace    http://tampermonkey.net/
 // @version      2.2
 // @description  Auto-click checkpoints + unlock content on Lootlink, Lootdest, and Luarmor with fingerprint stealth and mouse simulation

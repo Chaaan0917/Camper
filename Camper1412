@@ -1,0 +1,89 @@
+// ==UserScript==
+// @name         Camper Bypass + Luarmor Stealth
+// @namespace    http://tampermonkey.net/
+// @version      2.2
+// @description  Auto-click checkpoints + unlock content on Lootlink, Lootdest, and Luarmor with fingerprint stealth and mouse simulation
+// @match        *://*/*
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    const clicked = new WeakSet();
+
+    // --- Fingerprint stealth ---
+    try {
+        Object.defineProperty(navigator, 'webdriver', { get: () => false });
+        Object.defineProperty(navigator, 'plugins', { get: () => [1,2,3,4,5] });
+        Object.defineProperty(navigator, 'languages', { get: () => ['en-US','en'] });
+    } catch(e) {
+        console.warn("⚠️ Fingerprint stealth failed", e);
+    }
+
+    // Simulate small mouse movement over the element
+    function simulateMouseMovement(el) {
+        const rect = el.getBoundingClientRect();
+        const steps = 5 + Math.floor(Math.random() * 5); // 5-9 steps
+        for (let i = 0; i < steps; i++) {
+            const x = rect.left + Math.random() * rect.width;
+            const y = rect.top + Math.random() * rect.height;
+            const moveEvt = new MouseEvent('mousemove', {
+                bubbles: true,
+                cancelable: true,
+                clientX: x,
+                clientY: y,
+                view: window
+            });
+            el.dispatchEvent(moveEvt);
+        }
+    }
+
+    // Simulate human-like click
+    function simulateHumanClick(el) {
+        simulateMouseMovement(el); // move mouse first
+
+        const delay = Math.floor(Math.random() * 300) + 100; // 100ms - 400ms
+        setTimeout(() => {
+            ["mouseover","mouseenter","mousedown","mouseup","click"].forEach(evt => {
+                el.dispatchEvent(new MouseEvent(evt, {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window
+                }));
+            });
+            console.log("👉 Clicked:", el);
+        }, delay);
+    }
+
+    function tryClickAll(selector) {
+        document.querySelectorAll(selector).forEach(btn => {
+            if (!clicked.has(btn)) {
+                const style = window.getComputedStyle(btn);
+                if (style.pointerEvents !== "none" && style.opacity !== "0") {
+                    console.log(`⏳ Found ${selector}, waiting before click...`);
+                    setTimeout(() => {
+                        if (!clicked.has(btn)) {
+                            simulateHumanClick(btn);
+                            clicked.add(btn);
+                            console.log(`✅ Clicked ${selector}`);
+                        }
+                    }, Math.floor(Math.random() * 1000) + 800); // 800ms - 1800ms
+                }
+            }
+        });
+    }
+
+    const observer = new MutationObserver(() => {
+        // Lootdest: checkpoint + unlock content
+        tryClickAll("div.btn-shadow");
+
+        // Lootlink: unlock content
+        tryClickAll("div.is-success.btn-shadow");
+
+        // Luarmor: next button with mouse simulation
+        tryClickAll("#nextbtn");
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+})();

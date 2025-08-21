@@ -1,10 +1,23 @@
 // ==UserScript==
 // @name         Camper Bypass + Luarmor Stealth
 // @namespace    http://tampermonkey.net/
-// @version      2.3
-// @description  Auto-click checkpoints + unlock content on Lootlink, Lootdest, and Luarmor with advanced obfuscation
+// @version      2.4
+// @description  Auto-click checkpoints + unlock content on Lootlink, Lootdest, and Luarmor with full obfuscation
 // @match        *://*/*
 // @grant        none
 // ==/UserScript==
 
-(function(){'use strict';var _0x5a1b=["log","getBoundingClientRect","mousemove","mouseover","mouseenter","mousedown","mouseup","click","pointerEvents","opacity","querySelectorAll","has","add","WeakSet","random","floor"];const e=new WeakSet;try{Object.defineProperty(navigator,"webdriver",{get:()=>!1}),Object.defineProperty(navigator,"plugins",{get:()=>[1,2,3,4,5]}),Object.defineProperty(navigator,"languages",{get:()=>["en-US","en"]})}catch(t){console[_0x5a1b[0]]("⚠️ Fingerprint stealth failed",t)}function t(t){const n=t[_0x5a1b[1]](),o=5+Math[_0x5a1b[12]](5*Math[_0x5a1b[11]]());for(let r=0;r<o;r++){const e=n.left+Math[_0x5a1b[12]]()*n.width,i=n.top+Math[_0x5a1b[12]]()*n.height,a=new MouseEvent(_0x5a1b[2],{bubbles:!0,cancelable:!0,clientX:e,clientY:i,view:window});t.dispatchEvent(a)}}function n(n){t(n);const o=100+Math[_0x5a1b[12]](300*Math[_0x5a1b[11]]());setTimeout(()=>{[_0x5a1b[3],_0x5a1b[4],_0x5a1b[5],_0x5a1b[6],_0x5a1b[7]].forEach(e=>{n.dispatchEvent(new MouseEvent(e,{bubbles:!0,cancelable:!0,view:window}))}),console[_0x5a1b[0]]("👉 Clicked:",n)},o)}function o(t){document[_0x5a1b[10]](t).forEach(r=>{if(!e[_0x5a1b[13]](r)){const s=window.getComputedStyle(r);if(s[_0x5a1b[8]]!=="none"&&s[_0x5a1b[9]]!=="0"){setTimeout(()=>{if(!e[_0x5a1b[13]](r)){n(r),e[_0x5a1b[14]](r)}},800+Math[_0x5a1b[12]](1000*Math[_0x5a1b[11]]()))}}})}const r=new MutationObserver(()=>{o("div.btn-shadow"),o("div.is-success.btn-shadow"),o("#nextbtn")});r.observe(document.body,{childList:!0,subtree:!0})();
+(function(){'use strict';
+var _0x1a3b=["log","getBoundingClientRect","mousemove","mouseover","mouseenter","mousedown","mouseup","click","pointerEvents","opacity","querySelectorAll","has","add","WeakSet","random","floor","#nextbtn","div.btn-shadow","div.is-success.btn-shadow"];
+var A7cB=new WeakSet();
+try{
+    Object.defineProperty(navigator,"webdriver",{get:()=>!1});
+    Object.defineProperty(navigator,"plugins",{get:()=>[1,2,3,4,5]});
+    Object.defineProperty(navigator,"languages",{get:()=>["en-US","en"]});
+}catch(e){console[_0x1a3b[0]]("⚠️ Fingerprint stealth failed",e)}
+function Xy9Z(b){const c=b[_0x1a3b[1]](),d=5+Math[_0x1a3b[15]](5*Math[_0x1a3b[14]]());for(let i=0;i<d;i++){const j=c.left+Math[_0x1a3b[15]]()*c.width,k=c.top+Math[_0x1a3b[15]]()*c.height,l=new MouseEvent(_0x1a3b[2],{bubbles:!0,cancelable:!0,clientX:j,clientY:k,view:window});b.dispatchEvent(l)}} 
+function Yp2Q(c){Xy9Z(c);const d=100+Math[_0x1a3b[15]](300*Math[_0x1a3b[14]]());setTimeout(()=>{[_0x1a3b[3],_0x1a3b[4],_0x1a3b[5],_0x1a3b[6],_0x1a3b[7]].forEach(e=>{c.dispatchEvent(new MouseEvent(e,{bubbles:!0,cancelable:!0,view:window}))});console[_0x1a3b[0]]("👉 Clicked:",c)},d)}
+function Zm1R(d){document[_0x1a3b[10]](d).forEach(e=>{if(!A7cB[_0x1a3b[11]](e)){const f=window.getComputedStyle(e);if(f[_0x1a3b[8]]!=="none"&&f[_0x1a3b[9]]!=="0"){setTimeout(()=>{if(!A7cB[_0x1a3b[11]](e)){Yp2Q(e),A7cB[_0x1a3b[12]](e)}},800+Math[_0x1a3b[15]](1000*Math[_0x1a3b[14]]()))}}})}
+const O9kM=new MutationObserver(()=>{Zm1R(_0x1a3b[18]),Zm1R(_0x1a3b[19]),Zm1R(_0x1a3b[16])});
+O9kM.observe(document.body,{childList:!0,subtree:!0});
+})();

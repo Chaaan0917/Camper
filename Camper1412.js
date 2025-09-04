@@ -1,0 +1,423 @@
+// ==UserScript==
+// @name         Camper KING
+// @namespace    http://tampermonkey.net/
+// @version      3.0
+// @description  Automates Lootlink + Work.ink (mobile + desktop supported)
+// @match        *://loot-link.com/s?*
+// @match        *://loot-links.com/s?*
+// @match        *://lootlink.org/s?*
+// @match        *://lootlinks.co/s?*
+// @match        *://lootdest.info/s?*
+// @match        *://lootdest.org/s?*
+// @match        *://lootdest.com/s?*
+// @match        *://links-loot.com/s?*
+// @match        *://linksloot.net/s?*
+// @match        *://work.ink/*
+// @match        *://*.work.ink/*
+// @run-at       document-idle
+// @icon         https://i.pinimg.com/736x/02/72/16/02721647f507c80673b1b8ac20a82de3.jpg
+// @grant        none
+// ==/UserScript==
+
+/* -------------------------
+   Script 1: Lootlink Auto
+------------------------- */
+
+if (window.location.hostname.includes('lootlink') ||
+    window.location.hostname.includes('loot-link') ||
+    window.location.hostname.includes('lootdest') ||
+    window.location.hostname.includes('linksloot')) {
+
+(function() {
+    'use strict';
+
+    // --- Permanent block for window.open ---
+    window.open = function(url, name, specs) {
+        console.log("Blocked window.open:", url);
+        return null;
+    };
+
+    // --- Intercept all <a target="_blank"> clicks ---
+    document.addEventListener("click", function(e) {
+        const el = e.target.closest("a[target='_blank']");
+        if (el) {
+            e.preventDefault();
+            console.log("Blocked <a> click:", el.href);
+        }
+    }, true);
+
+    const clicked = new WeakSet();
+
+    function simulateMouseMovement(el) {
+        const rect = el.getBoundingClientRect();
+        const steps = 3 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < steps; i++) {
+            const x = rect.left + Math.random() * rect.width;
+            const y = rect.top + Math.random() * rect.height;
+            el.dispatchEvent(new MouseEvent('mousemove', {
+                bubbles: true,
+                cancelable: true,
+                clientX: x,
+                clientY: y,
+                view: window
+            }));
+        }
+    }
+
+    function simulateHumanClick(el) {
+        simulateMouseMovement(el);
+        const delay = Math.floor(Math.random() * 300) + 100;
+
+        setTimeout(() => {
+            const events = [
+                "touchstart", "touchend", "click",
+                "mouseover", "mouseenter", "mousedown", "mouseup"
+            ];
+            events.forEach(evt => {
+                try {
+                    const event = new Event(evt, { bubbles: true, cancelable: true });
+                    el.dispatchEvent(event);
+                } catch (e) {
+                    console.log("Dispatch failed for", evt, e);
+                }
+            });
+
+            clicked.add(el);
+            console.log("Clicked (human-like) without opening tab:", el);
+        }, delay);
+    }
+
+    function tryClickSequential(selector) {
+        const buttons = Array.from(document.querySelectorAll(selector));
+        for (const btn of buttons) {
+            if (!clicked.has(btn)) {
+                const style = window.getComputedStyle(btn);
+                if (style.pointerEvents !== "none" && style.opacity !== "0") {
+                    setTimeout(() => {
+                        if (!clicked.has(btn)) {
+                            simulateHumanClick(btn);
+                        }
+                    }, Math.floor(Math.random() * 1000) + 800);
+                    break; // Only one click per run
+                }
+            }
+        }
+    }
+
+    // --- Observe DOM mutations and click buttons sequentially ---
+    const observer = new MutationObserver(() => {
+        tryClickSequential("div.is-success.btn-shadow");
+        tryClickSequential("#nextbtn");
+        tryClickSequential("div[id][class]");
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+})();
+
+}
+
+
+/* -------------------------
+   Script 2: Work.ink Auto
+------------------------- */
+
+if (window.location.hostname.includes('work.ink')) {
+
+(function () {
+  'use strict';
+
+  const STEP_CONT_SELECTOR = "div.stepcont.svelte-ck84f7";
+
+  // Conditional window.open block with restoration
+  let observer = null;
+  let originalOpen = null;
+
+  function injectBlock() {
+    if (originalOpen) return; // already injected
+    originalOpen = window.open; // save original
+    window.open = function(url, name, specs) {
+      console.log("[work.ink:auto] Blocked window.open ->", url);
+      return null;
+    };
+
+    document.addEventListener("click", blockLinkClick, true);
+    console.log("[work.ink:auto] Block script injected");
+  }
+
+  function removeBlock() {
+    if (!originalOpen) return;
+    window.open = originalOpen; // restore original
+    originalOpen = null;
+
+    document.removeEventListener("click", blockLinkClick, true);
+    console.log("[work.ink:auto] Block script removed, window.open restored");
+  }
+
+  function blockLinkClick(e) {
+    let a = e.target.closest("a[target=_blank], a[target=_new]");
+    if (a) {
+      e.preventDefault();
+      console.log("[work.ink:auto] Blocked external link:", a.href);
+    }
+  }
+
+  function checkStepCont() {
+    const exists = !!document.querySelector(STEP_CONT_SELECTOR);
+    if (exists) injectBlock();
+    else removeBlock();
+  }
+
+  // Initial check
+  checkStepCont();
+
+  // Observe DOM changes to handle stepcont appear/disappear
+  observer = new MutationObserver(checkStepCont);
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  // existing selectors
+  const STEP1_SELECTOR = "div.button.large.accessBtn.pos-relative.svelte-s4fbka";
+  const STEP2_SELECTOR = "button.w-full.bg-primary-500.hover\\:bg-primary-600.active\\:bg-primary-700.text-white.py-4.rounded-full.font-medium.transition-colors.flex.items-center.justify-center.gap-2.shadow-lg.shadow-primary-500\\/20";
+  const MODAL_SELECTOR = "div.fixed.inset-0.bg-black\\/50.backdrop-blur-sm.flex.items-center.justify-center.p-4.main-modal.svelte-12h72hl";
+  const MODAL_CLOSE_BTN = "button.hover\\:bg-gray-100.p-2.rounded-full.transition-colors";
+  const GREEN_BTN_SELECTOR = "button.w-full.h-14.px-6.text-lg.font-semibold.rounded-full.transition-all.duration-200.flex.items-center.justify-center.space-x-3.bg-green-600.text-white.hover\\:bg-green-700.shadow-lg.hover\\:shadow-xl";
+  const STEP5_SELECTOR = "button.interestedBtn.button, button.interestedBtn.svelte-3yab7m, .interestedBtn";
+  const SKIP_BTN_SELECTOR = "button.skipBtn.svelte-3yab7m, .skipBtn";
+
+  function log(...args) { console.log("[work.ink:auto]", ...args); }
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function isWorkInkLoading() {
+    return /Checking your browser\\. This takes about 5 seconds\\./i.test(document.body?.innerText || '');
+  }
+
+  function waitForElement(selector) {
+    return new Promise((resolve) => {
+      const found = document.querySelector(selector);
+      if (found) return resolve(found);
+
+      const mo = new MutationObserver(() => {
+        const el = document.querySelector(selector);
+        if (el) {
+          mo.disconnect();
+          resolve(el);
+        }
+      });
+      mo.observe(document.body, { childList: true, subtree: true });
+    });
+  }
+
+  function enableAndClick(el) {
+    if (!el) return false;
+    try {
+      el.scrollIntoView({ block: 'center', inline: 'center' });
+      try { el.removeAttribute && el.removeAttribute('disabled'); } catch (_) {}
+      try { if (el.style) el.style.pointerEvents = 'auto', el.style.opacity = '1'; } catch (_) {}
+      el.click();
+      return true;
+    } catch (e) {
+      log("click failed:", e);
+      return false;
+    }
+  }
+
+  async function pollFor(selector, interval = 500, timeout = 0) {
+    const start = Date.now();
+    while (true) {
+      const el = document.querySelector(selector);
+      if (el) return el;
+      if (timeout > 0 && (Date.now() - start) > timeout) return null;
+      await sleep(interval);
+    }
+  }
+
+  function accelerateStep2Timer() {
+    const interval = setInterval(() => {
+      if (window.step2Countdown !== undefined) {
+        window.step2Countdown -= 4;
+        if (window.step2Countdown <= 0) {
+          window.step2Countdown = 0;
+          clearInterval(interval);
+        }
+      }
+    }, 1000);
+  }
+
+  async function runOnceCycle() {
+    log("Waiting for Step 1 element:", STEP1_SELECTOR);
+    const step1El = await waitForElement(STEP1_SELECTOR);
+    if (!step1El) return log("Step1 not found, aborting.");
+    log("Step1 found — clicking");
+    enableAndClick(step1El);
+
+    accelerateStep2Timer();
+
+    log("Polling for Step 2 element...");
+    const step2El = await pollFor(STEP2_SELECTOR, 500, 0);
+    if (step2El) {
+      log("Step2 found — clicking");
+      enableAndClick(step2El);
+    }
+
+    log("Checking for modal...");
+    const modal = await pollFor(MODAL_SELECTOR, 500, 15000);
+    if (modal) {
+      log("Modal appeared — closing");
+      const closeBtn = modal.querySelector(MODAL_CLOSE_BTN) || document.querySelector(MODAL_CLOSE_BTN);
+      if (closeBtn) {
+        enableAndClick(closeBtn);
+        await sleep(1000);
+        const step1Again = document.querySelector(STEP1_SELECTOR) || await pollFor(STEP1_SELECTOR, 500, 20000);
+        if (step1Again) enableAndClick(step1Again);
+      }
+    }
+  }
+
+  (async function main() {
+    if (document.readyState !== 'complete') {
+      await new Promise(r => window.addEventListener('load', r));
+      await sleep(300);
+    }
+
+    if (isWorkInkLoading()) {
+      log("Work.ink loader detected — stopping script.");
+      return;
+    }
+
+    try {
+      await runOnceCycle();
+      log("Flow finished (one cycle).");
+    } catch (err) {
+      log("Error in flow:", err);
+    }
+  })();
+
+  let greenClicked = false;
+  setInterval(() => {
+    if (greenClicked) return;
+    const greenBtn = document.querySelector(GREEN_BTN_SELECTOR);
+    if (greenBtn) {
+      if (enableAndClick(greenBtn)) {
+        greenClicked = true;
+      }
+    }
+  }, 500);
+
+  let interestedClicked = false;
+  let skipClicked = false;
+  const step5Interval = setInterval(() => {
+    if (interestedClicked) return;
+    const step5Btn = document.querySelector(STEP5_SELECTOR);
+    if (step5Btn) {
+      if (enableAndClick(step5Btn)) {
+        interestedClicked = true;
+        log("interestedBtn clicked — will attempt skipBtn in 3s");
+
+        setTimeout(() => {
+          if (skipClicked) return;
+          const skipBtn = document.querySelector(SKIP_BTN_SELECTOR);
+          if (skipBtn) {
+            if (enableAndClick(skipBtn)) {
+              skipClicked = true;
+              log("skipBtn clicked after interestedBtn");
+            } else {
+              log("skipBtn found but click failed");
+            }
+          } else {
+            log("skipBtn not present at 3s mark (no retry).");
+          }
+        }, 3000);
+      }
+    }
+  }, 500);
+
+  // Auto-click stepcont with modalwrapper handling
+  (function () {
+    let stepContReady = true;
+
+    function tryClickStepCont() {
+      if (!stepContReady) return;
+      const stepCont = document.querySelector(STEP_CONT_SELECTOR);
+      if (stepCont) {
+        if (enableAndClick(stepCont)) {
+          log("Clicked stepcont div.");
+          stepContReady = false;
+        }
+      }
+    }
+
+    const observerStep = new MutationObserver(() => {
+      const modal = document.querySelector("div.modalwrapper");
+      if (modal) {
+        stepContReady = false;
+        return;
+      }
+
+      if (!modal && !stepContReady) {
+        stepContReady = true;
+        tryClickStepCont();
+      } else {
+        tryClickStepCont();
+      }
+    });
+
+    observerStep.observe(document.body, { childList: true, subtree: true });
+  })();
+
+  // remove modalwrapper
+  (function () {
+    const observerModal = new MutationObserver(() => {
+      document.querySelectorAll("div.modalwrapper").forEach(modal => {
+        console.log("[work.ink:auto] Removed modalwrapper");
+        modal.remove();
+      });
+    });
+
+    observerModal.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  })();
+
+    // SPEEDUP WORKINK LOL
+
+    (function() {
+        'use strict';
+
+        // --- 1. Remove animations/transitions ---
+        const style = document.createElement('style');
+        style.textContent = `
+        * {
+            transition: none !important;
+            animation: none !important;
+        }
+    `;
+        document.head.appendChild(style);
+
+        // --- 2. Speed up all setTimeouts/setIntervals ---
+        const realSetTimeout = window.setTimeout;
+        window.setTimeout = function(fn, delay, ...args) {
+            return realSetTimeout(fn, delay / 10, ...args); // 10x faster
+        };
+
+        const realSetInterval = window.setInterval;
+        window.setInterval = function(fn, delay, ...args) {
+            return realSetInterval(fn, delay / 10, ...args); // 10x faster
+        };
+
+        // --- 3. Automatically skip countdown elements ---
+        function skipCountdown() {
+            const countdowns = document.querySelectorAll('.countdown, .timer'); // adjust selectors
+            countdowns.forEach(cd => cd.textContent = '0');
+        }
+
+        setInterval(skipCountdown, 100); // check and skip every 100ms
+
+        console.log('[Workink Speed Booster] Script running ✅');
+
+    })();
+
+})();
+}
+
+

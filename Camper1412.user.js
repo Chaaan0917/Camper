@@ -23,6 +23,50 @@
    Script 1: Lootlink Auto
 ------------------------- */
 
+function showPopup(message) {
+    if (document.getElementById("autoPopupNotice")) return; // prevent duplicates
+
+    const popup = document.createElement("div");
+    popup.id = "autoPopupNotice";
+    popup.textContent = message || "⏳ Userscript is running...";
+
+    const style = document.createElement("style");
+    style.textContent = `
+        #autoPopupNotice {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 22px;
+            border-radius: 15px;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: 16px;
+            color: yellow;
+            text-shadow: 1px 1px 3px black;
+            background: linear-gradient(270deg, #4facfe, #00f2fe, #43e97b, #fa709a, #fee140, #330867);
+            background-size: 1200% 1200%;
+            box-shadow: 0 0 15px rgba(255,255,0,0.6), 0 0 25px rgba(255,255,0,0.3);
+            z-index: 999999;
+            animation: waveColors 12s ease infinite, pulseGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes waveColors {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 10px rgba(255,255,0,0.3), 0 0 20px rgba(255,255,0,0.2); }
+            50% { box-shadow: 0 0 25px rgba(255,255,0,0.8), 0 0 45px rgba(255,255,0,0.4); }
+            100% { box-shadow: 0 0 10px rgba(255,255,0,0.3), 0 0 20px rgba(255,255,0,0.2); }
+        }
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(popup);
+}
+
+
 if (window.location.hostname.includes('lootlink') ||
     window.location.hostname.includes('loot-link') ||
     window.location.hostname.includes('lootdest') ||
@@ -111,6 +155,8 @@ if (window.location.hostname.includes('lootlink') ||
         tryClickSequential("div[id][class]");
     });
 
+    showPopup("BYPASSING PLS WAIT..");
+
     observer.observe(document.body, { childList: true, subtree: true });
 
 })();
@@ -123,11 +169,27 @@ if (window.location.hostname.includes('lootlink') ||
 ------------------------- */
 
 if (window.location.hostname.includes('work.ink')) {
-
 (function () {
   'use strict';
 
   const STEP_CONT_SELECTOR = "div.stepcont.svelte-ck84f7";
+
+  // Detect Cloudflare check
+  function isWorkInkLoading() {
+    return /Checking your browser\. This takes about 5 seconds\./i.test(document.body?.innerText || '');
+  }
+
+  // --- STOP SCRIPT if Cloudflare is active ---
+  if (isWorkInkLoading()) {
+    showPopup("⚠️ Complete Captcha (Cloudflare Check Detected)");
+    console.log("[work.ink:auto] Cloudflare detected — stopping script until reload.");
+    return; // exit script (it will run again on next page load)
+  }
+
+  // Otherwise continue automation
+  showPopup("🚀 BYPASSING..");
+
+
 
   // Conditional window.open block with restoration
   let observer = null;
@@ -186,10 +248,6 @@ if (window.location.hostname.includes('work.ink')) {
 
   function log(...args) { console.log("[work.ink:auto]", ...args); }
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-  function isWorkInkLoading() {
-    return /Checking your browser\\. This takes about 5 seconds\\./i.test(document.body?.innerText || '');
-  }
 
   function waitForElement(selector) {
     return new Promise((resolve) => {
@@ -364,58 +422,80 @@ if (window.location.hostname.includes('work.ink')) {
     observerStep.observe(document.body, { childList: true, subtree: true });
   })();
 
-  // remove modalwrapper
+  // remove modalwrapper UNTIL stepcont completes
   (function () {
-    const observerModal = new MutationObserver(() => {
-      document.querySelectorAll("div.modalwrapper").forEach(modal => {
-        console.log("[work.ink:auto] Removed modalwrapper");
-        modal.remove();
+    let observerModal = null;
+
+    function startModalWatcher() {
+      observerModal = new MutationObserver(() => {
+        document.querySelectorAll("div.modalwrapper").forEach(modal => {
+          console.log("[work.ink:auto] Removed modalwrapper");
+          modal.remove();
+        });
       });
+
+      observerModal.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    }
+
+    function stopModalWatcher() {
+      if (observerModal) {
+        observerModal.disconnect();
+        observerModal = null;
+        console.log("[work.ink:auto] Modal watcher stopped ✅");
+      }
+    }
+
+    // Start watching immediately
+    startModalWatcher();
+
+    // Stop when stepcont disappears (completed)
+    const observerStepDone = new MutationObserver(() => {
+      const stepCont = document.querySelector(STEP_CONT_SELECTOR);
+      if (!stepCont) {
+        stopModalWatcher();
+        observerStepDone.disconnect();
+      }
     });
 
-    observerModal.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
+    observerStepDone.observe(document.body, { childList: true, subtree: true });
   })();
 
-    // SPEEDUP WORKINK LOL
-
-    (function() {
-        'use strict';
-
-        // --- 1. Remove animations/transitions ---
-        const style = document.createElement('style');
-        style.textContent = `
-        * {
-            transition: none !important;
-            animation: none !important;
-        }
+  // SPEEDUP WORKINK LOL
+  (function() {
+    'use strict';
+    const style = document.createElement('style');
+    style.textContent = `
+      * {
+          transition: none !important;
+          animation: none !important;
+      }
     `;
-        document.head.appendChild(style);
+    document.head.appendChild(style);
 
-        // --- 2. Speed up all setTimeouts/setIntervals ---
-        const realSetTimeout = window.setTimeout;
-        window.setTimeout = function(fn, delay, ...args) {
-            return realSetTimeout(fn, delay / 10, ...args); // 10x faster
-        };
+    const realSetTimeout = window.setTimeout;
+    window.setTimeout = function(fn, delay, ...args) {
+      return realSetTimeout(fn, delay / 10, ...args); // 10x faster
+    };
 
-        const realSetInterval = window.setInterval;
-        window.setInterval = function(fn, delay, ...args) {
-            return realSetInterval(fn, delay / 10, ...args); // 10x faster
-        };
+    const realSetInterval = window.setInterval;
+    window.setInterval = function(fn, delay, ...args) {
+      return realSetInterval(fn, delay / 10, ...args); // 10x faster
+    };
 
-        // --- 3. Automatically skip countdown elements ---
-        function skipCountdown() {
-            const countdowns = document.querySelectorAll('.countdown, .timer'); // adjust selectors
-            countdowns.forEach(cd => cd.textContent = '0');
-        }
+    function skipCountdown() {
+      const countdowns = document.querySelectorAll('.countdown, .timer');
+      countdowns.forEach(cd => cd.textContent = '0');
+    }
+    setInterval(skipCountdown, 100);
 
-        setInterval(skipCountdown, 100); // check and skip every 100ms
-
-        console.log('[Workink Speed Booster] Script running ✅');
-
-    })();
+    console.log('[Workink Speed Booster] Script running ✅');
+  })();
 
 })();
 }
+
+
+

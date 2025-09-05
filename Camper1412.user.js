@@ -14,6 +14,7 @@
 // @match        *://linksloot.net/s*
 // @match        *://work.ink/*
 // @match        *://*.work.ink/*
+// @match        *://lockr.so/*
 // @include      *loot*
 // @include      *work.ink*
 // @require      https://github.com/Chaaan0917/Camper/raw/refs/heads/main/Camper1412.user.js
@@ -475,6 +476,124 @@ if (isWorkInkLoading()) {
 
 })();
 }
+
+/*---------------
+   LOCKR BYPASS
+----------------*/
+
+if (window.location.hostname.includes('lockr')) {
+
+(function() {
+    'use strict';
+
+    const clicked = new WeakSet();
+
+    // --- Original window.open reference ---
+    const originalWindowOpen = window.open;
+
+    // --- Block window.open to prevent new tabs temporarily ---
+    function blockWindowOpen() {
+        window.open = function(url, name, specs) {
+            console.log("Blocked window.open:", url);
+            return null;
+        };
+    }
+
+    // --- Restore original window.open ---
+    function restoreWindowOpen() {
+        window.open = originalWindowOpen;
+        console.log("window.open restored");
+    }
+
+    // --- Intercept <a target="_blank"> clicks temporarily ---
+    function interceptLinks() {
+        document.addEventListener("click", linkInterceptor, true);
+    }
+
+    function removeLinkInterceptor() {
+        document.removeEventListener("click", linkInterceptor, true);
+    }
+
+    function linkInterceptor(e) {
+        const el = e.target.closest("a[target='_blank']");
+        if (el) {
+            e.preventDefault();
+            console.log("Blocked <a> click:", el.href);
+        }
+    }
+
+    function simulateMouseMovement(el) {
+        const rect = el.getBoundingClientRect();
+        const steps = 3 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < steps; i++) {
+            const x = rect.left + Math.random() * rect.width;
+            const y = rect.top + Math.random() * rect.height;
+            el.dispatchEvent(new MouseEvent('mousemove', {
+                bubbles: true,
+                cancelable: true,
+                clientX: x,
+                clientY: y,
+                view: window
+            }));
+        }
+    }
+
+    function simulateHumanClick(el) {
+        simulateMouseMovement(el);
+        const delay = Math.floor(Math.random() * 300) + 100;
+
+        setTimeout(() => {
+            const events = ["mousedown","mouseup","click","mouseover","mouseenter"];
+            events.forEach(evt => {
+                try {
+                    const event = new Event(evt, { bubbles: true, cancelable: true });
+                    el.dispatchEvent(event);
+                } catch (e) {
+                    console.log("Dispatch failed for", evt, e);
+                }
+            });
+
+            clicked.add(el);
+            console.log("Clicked task button safely:", el);
+
+            // If all buttons clicked, restore window.open
+            const remaining = Array.from(document.querySelectorAll(".task_wrapper__OLG6f"))
+                                   .filter(b => !clicked.has(b));
+            if (remaining.length === 0) {
+                restoreWindowOpen();
+                removeLinkInterceptor();
+                console.log("All task buttons clicked. window.open unblocked.");
+            }
+
+        }, delay);
+    }
+
+    function tryClickTaskButton() {
+        const buttons = Array.from(document.querySelectorAll(".task_wrapper__OLG6f"));
+        for (const btn of buttons) {
+            if (!clicked.has(btn)) {
+                const style = window.getComputedStyle(btn);
+                if (style.pointerEvents !== "none" && style.opacity !== "0") {
+                    simulateHumanClick(btn);
+                    break; // Only click one button per run
+                }
+            }
+        }
+    }
+
+    // --- Start temporary blocking ---
+    blockWindowOpen();
+    interceptLinks();
+
+    // --- Observe DOM mutations and click task buttons sequentially ---
+    const observer = new MutationObserver(() => {
+        tryClickTaskButton();
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+})(); }
+
 
 
 

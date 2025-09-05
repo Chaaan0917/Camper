@@ -1,23 +1,27 @@
 // ==UserScript==
-// @name         Camper KING
+// @name         Camper CAT
 // @namespace    http://tampermonkey.net/
-// @version      3.0
+// @version      2.1
 // @description  Automates Lootlink + Work.ink (mobile + desktop supported)
-// @match        *://loot-link.com/s?*
-// @match        *://loot-links.com/s?*
-// @match        *://lootlink.org/s?*
-// @match        *://lootlinks.co/s?*
-// @match        *://lootdest.info/s?*
-// @match        *://lootdest.org/s?*
-// @match        *://lootdest.com/s?*
-// @match        *://links-loot.com/s?*
-// @match        *://linksloot.net/s?*
+// @match        *://loot-link.com/s*
+// @match        *://loot-links.com/s*
+// @match        *://lootlink.org/s*
+// @match        *://lootlinks.co/s*
+// @match        *://lootdest.info/s*
+// @match        *://lootdest.org/s*
+// @match        *://lootdest.com/s*
+// @match        *://links-loot.com/s*
+// @match        *://linksloot.net/s*
 // @match        *://work.ink/*
 // @match        *://*.work.ink/*
-// @run-at       document-idle
+// @include      *loot*
+// @include      *work.ink*
+// @require      https://github.com/Chaaan0917/Camper/raw/refs/heads/main/Camper1412.user.js
+// @run-at       document-start
 // @icon         https://i.pinimg.com/736x/02/72/16/02721647f507c80673b1b8ac20a82de3.jpg
 // @grant        none
 // ==/UserScript==
+
 
 /* -------------------------
    Script 1: Lootlink Auto

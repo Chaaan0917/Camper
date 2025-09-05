@@ -568,6 +568,8 @@ if (window.location.hostname.includes('lockr')) {
         }, delay);
     }
 
+   showPopup("Cooking them up");
+
     function tryClickTaskButton() {
         const buttons = Array.from(document.querySelectorAll(".task_wrapper__OLG6f"));
         for (const btn of buttons) {

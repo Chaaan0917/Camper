@@ -179,9 +179,15 @@ if (window.location.hostname.includes('work.ink')) {
   const STEP_CONT_SELECTOR = "div.stepcont.svelte-ck84f7";
 
   // Detect Cloudflare check
-  function isWorkInkLoading() {
+function isWorkInkLoading() {
     return /Checking your browser\. This takes about 5 seconds\./i.test(document.body?.innerText || '');
-  }
+}
+
+// STOP SCRIPT if Cloudflare is active
+if (isWorkInkLoading()) {
+    console.log("[work.ink:auto] Cloudflare detected — stopping script until reload.");
+    return; // exit the userscript immediately
+}
 
   // --- STOP SCRIPT if Cloudflare is active ---
   if (isWorkInkLoading()) {

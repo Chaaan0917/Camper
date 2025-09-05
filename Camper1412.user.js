@@ -463,37 +463,6 @@ if (window.location.hostname.includes('work.ink')) {
     observerStepDone.observe(document.body, { childList: true, subtree: true });
   })();
 
-  // SPEEDUP WORKINK LOL
-  (function() {
-    'use strict';
-    const style = document.createElement('style');
-    style.textContent = `
-      * {
-          transition: none !important;
-          animation: none !important;
-      }
-    `;
-    document.head.appendChild(style);
-
-    const realSetTimeout = window.setTimeout;
-    window.setTimeout = function(fn, delay, ...args) {
-      return realSetTimeout(fn, delay / 10, ...args); // 10x faster
-    };
-
-    const realSetInterval = window.setInterval;
-    window.setInterval = function(fn, delay, ...args) {
-      return realSetInterval(fn, delay / 10, ...args); // 10x faster
-    };
-
-    function skipCountdown() {
-      const countdowns = document.querySelectorAll('.countdown, .timer');
-      countdowns.forEach(cd => cd.textContent = '0');
-    }
-    setInterval(skipCountdown, 100);
-
-    console.log('[Workink Speed Booster] Script running ✅');
-  })();
-
 })();
 }
 

@@ -662,3 +662,130 @@ if (window.location.hostname.includes('lockr')) {
     observer.observe(document.body, { childList: true, subtree: true });
 
 })(); }
+
+/*------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                                                  BLOX-SCRIPT
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+
+if (window.location.hostname.includes('blox-script.com')) {
+(function () {
+    'use strict';
+
+    const LOG = '[BloxLoop]';
+    const SELECTOR = 'button[data-slot="button"][data-testid="button-direct-link"]';
+    const TOTAL_CLICKS = 17;
+
+    // --- Block all new tabs / popups ---
+    try {
+        // Force window.open to always return null
+        Object.defineProperty(window, 'open', {
+            configurable: false,
+            writable: false,
+            value: function() {
+                console.log(LOG, 'blocked window.open attempt');
+                return null;
+            }
+        });
+
+        // Block showModalDialog just in case
+        window.showModalDialog = function() {
+            console.log(LOG, 'blocked showModalDialog attempt');
+            return null;
+        };
+
+        // Prevent _blank link clicks
+        document.addEventListener('click', e => {
+            const el = e.target.closest('a');
+            if (el && el.target === '_blank') {
+                e.preventDefault();
+                console.log(LOG, 'blocked _blank link click:', el.href);
+            }
+        }, true);
+    } catch (err) {
+        console.warn(LOG, 'error setting popup blockers', err);
+    }
+
+    // --- Helper functions ---
+    const sleep = ms => new Promise(res => setTimeout(res, ms));
+    const rand = (min, max) => Math.floor(min + Math.random() * (max - min + 1));
+
+    async function humanClick(el) {
+        if (!el) return false;
+        try {
+            el.scrollIntoView({ behavior: 'auto', block: 'center', inline: 'center' });
+            el.focus && el.focus();
+
+            const rect = el.getBoundingClientRect();
+            const cx = Math.max(1, Math.floor(rect.left + rect.width / 2));
+            const cy = Math.max(1, Math.floor(rect.top + rect.height / 2));
+
+            const steps = 1 + Math.floor(Math.random() * 3);
+            for (let s = 0; s < steps; s++) {
+                const x = cx + Math.floor((Math.random() - 0.5) * 6);
+                const y = cy + Math.floor((Math.random() - 0.5) * 6);
+                try { document.dispatchEvent(new PointerEvent('pointermove', { clientX: x, clientY: y, bubbles: true })); } catch(e) {}
+                try { document.dispatchEvent(new MouseEvent('mousemove', { clientX: x, clientY: y, bubbles: true })); } catch(e) {}
+                await sleep(rand(15, 45));
+            }
+
+            try { el.dispatchEvent(new PointerEvent('pointerover', { clientX: cx, clientY: cy, bubbles: true })); } catch(e) {}
+            try { el.dispatchEvent(new MouseEvent('mouseover', { clientX: cx, clientY: cy, bubbles: true })); } catch(e) {}
+            await sleep(rand(30, 80));
+
+            try { el.dispatchEvent(new PointerEvent('pointerdown', { clientX: cx, clientY: cy, bubbles: true })); } catch(e) {}
+            try { el.dispatchEvent(new MouseEvent('mousedown', { clientX: cx, clientY: cy, bubbles: true, button: 0 })); } catch(e) {}
+            await sleep(rand(40, 110));
+            try { el.dispatchEvent(new PointerEvent('pointerup', { clientX: cx, clientY: cy, bubbles: true })); } catch(e) {}
+            try { el.dispatchEvent(new MouseEvent('mouseup', { clientX: cx, clientY: cy, bubbles: true, button: 0 })); } catch(e) {}
+            try { el.dispatchEvent(new MouseEvent('click', { clientX: cx, clientY: cy, bubbles: true, button: 0 })); } catch(e) {}
+            try { HTMLElement.prototype.click.call(el); } catch (err) {}
+
+            return true;
+        } catch (err) {
+            console.warn(LOG, 'humanClick error', err);
+            return false;
+        }
+    }
+
+    async function waitForButton(timeoutMs = 8000, poll = 250) {
+        const start = Date.now();
+        while (Date.now() - start < timeoutMs) {
+            const el = document.querySelector(SELECTOR);
+            if (el) return el;
+            await sleep(poll);
+        }
+        return null;
+    }
+
+    async function runLoop() {
+        console.log(LOG, 'starting loop for', TOTAL_CLICKS, 'clicks; selector=', SELECTOR);
+
+        for (let i = 1; i <= TOTAL_CLICKS; i++) {
+            const btn = document.querySelector(SELECTOR) || await waitForButton(6000, 300);
+            if (!btn) {
+                console.error(LOG, `(${i}/${TOTAL_CLICKS}) button not found — aborting.`);
+                return;
+            }
+
+            console.log(LOG, `(${i}/${TOTAL_CLICKS}) found button — text: "${(btn.innerText||btn.textContent||'').trim().slice(0,60)}"`);
+            const ok = await humanClick(btn);
+
+            if (!ok) {
+                console.warn(LOG, `(${i}/${TOTAL_CLICKS}) click attempt failed.`);
+            } else {
+                console.log(LOG, `(${i}/${TOTAL_CLICKS}) click done.`);
+            }
+
+            const delay = rand(900, 1600);
+            await sleep(delay);
+        }
+
+        console.log(LOG, 'completed all clicks.');
+    }
+
+    window.addEventListener('load', () => setTimeout(runLoop, 700));
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(runLoop, 700);
+    }
+
+})(); }

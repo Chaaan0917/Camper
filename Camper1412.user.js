@@ -491,9 +491,7 @@ if (window.location.hostname.includes('work.ink')) {
     observerStepDone.observe(document.body, { childList: true, subtree: true });
   })();
 
-})();
-
-    // --- NEW BUTTON HANDLER ---
+      // --- NEW BUTTON HANDLER ---
 (function () {
   let newBtnClicked = false;
   const newBtnInterval = setInterval(() => {
@@ -538,6 +536,10 @@ if (window.location.hostname.includes('work.ink')) {
       }
     }
   }, 500);
+
+})();
+
+  
 })();
 
 }

@@ -158,6 +158,7 @@ if (window.location.hostname.includes('lootlink') ||
         tryClickSequential("div.is-success.btn-shadow");
         tryClickSequential("#nextbtn");
         tryClickSequential("div[id][class]");
+        tryClickSequential("div[class]");
     });
 
     showPopup("BYPASSING PLS WAIT..");

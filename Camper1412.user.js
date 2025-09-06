@@ -17,8 +17,6 @@
 // @match        *://lockr.so/*
 // @include      *loot*
 // @include      *work.ink*
-// @downloadURL  https://github.com/Chaaan0917/Camper/raw/refs/heads/main/Camper1412.user.js
-// @updateURL    https://github.com/Chaaan0917/Camper/raw/refs/heads/main/Camper1412.user.js
 // @run-at       document-idle
 // @icon         https://i.pinimg.com/736x/02/72/16/02721647f507c80673b1b8ac20a82de3.jpg
 // @grant        none

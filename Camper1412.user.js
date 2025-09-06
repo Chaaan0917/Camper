@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Camper CAT
+// @name         Camper updates
 // @namespace    http://tampermonkey.net/
 // @version      2.1
 // @description  Automates Lootlink + Work.ink (mobile + desktop supported)
@@ -181,15 +181,15 @@ if (window.location.hostname.includes('work.ink')) {
   const STEP_CONT_SELECTOR = "div.stepcont.svelte-ck84f7";
 
   // Detect Cloudflare check
-function isWorkInkLoading() {
+  function isWorkInkLoading() {
     return /Checking your browser\. This takes about 5 seconds\./i.test(document.body?.innerText || '');
-}
+  }
 
-// STOP SCRIPT if Cloudflare is active
-if (isWorkInkLoading()) {
+  // STOP SCRIPT if Cloudflare is active
+  if (isWorkInkLoading()) {
     console.log("[work.ink:auto] Cloudflare detected — stopping script until reload.");
     return; // exit the userscript immediately
-}
+  }
 
   // --- STOP SCRIPT if Cloudflare is active ---
   if (isWorkInkLoading()) {
@@ -255,6 +255,7 @@ if (isWorkInkLoading()) {
   const GREEN_BTN_SELECTOR = "button.w-full.h-14.px-6.text-lg.font-semibold.rounded-full.transition-all.duration-200.flex.items-center.justify-center.space-x-3.bg-green-600.text-white.hover\\:bg-green-700.shadow-lg.hover\\:shadow-xl";
   const STEP5_SELECTOR = "button.interestedBtn.button, button.interestedBtn.svelte-3yab7m, .interestedBtn";
   const SKIP_BTN_SELECTOR = "button.skipBtn.svelte-3yab7m, .skipBtn";
+  const NEW_BTN_SELECTOR = "button.button.svelte-3ht8ui"; // NEW BUTTON
 
   function log(...args) { console.log("[work.ink:auto]", ...args); }
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -360,6 +361,7 @@ if (isWorkInkLoading()) {
     }
   })();
 
+  // --- Auto-click handlers ---
   let greenClicked = false;
   setInterval(() => {
     if (greenClicked) return;
@@ -398,6 +400,22 @@ if (isWorkInkLoading()) {
       }
     }
   }, 500);
+
+  // --- NEW BUTTON HANDLER ---
+  (function () {
+    let newBtnClicked = false;
+    const newBtnInterval = setInterval(() => {
+      if (newBtnClicked) return;
+      const btn = document.querySelector(NEW_BTN_SELECTOR);
+      if (btn) {
+        if (enableAndClick(btn)) {
+          newBtnClicked = true;
+          console.log("[work.ink:auto] New svelte-3ht8ui button clicked ✅");
+          clearInterval(newBtnInterval);
+        }
+      }
+    }, 500);
+  })();
 
   // Auto-click stepcont with modalwrapper handling
   (function () {
@@ -474,7 +492,56 @@ if (isWorkInkLoading()) {
   })();
 
 })();
+
+    // --- NEW BUTTON HANDLER ---
+(function () {
+  let newBtnClicked = false;
+  const newBtnInterval = setInterval(() => {
+    if (newBtnClicked) return;
+    const btn = document.querySelector(NEW_BTN_SELECTOR);
+    if (btn) {
+      if (enableAndClick(btn)) {
+        newBtnClicked = true;
+        console.log("[work.ink:auto] New svelte-3ht8ui button clicked ✅");
+        clearInterval(newBtnInterval);
+
+        // 🔴 Force Wave lock released after button click
+        console.log("[work.ink:auto] Forcing wave lock released ❌");
+
+        // Override document.hidden and visibilityState
+        Object.defineProperty(document, "hidden", {
+          configurable: true,
+          get: () => true
+        });
+
+        Object.defineProperty(document, "visibilityState", {
+          configurable: true,
+          get: () => "hidden"
+        });
+
+        // Block focus/blur/visibilitychange listeners
+        window.addEventListener = new Proxy(window.addEventListener, {
+          apply(target, thisArg, args) {
+            if (["focus", "blur", "visibilitychange"].includes(args[0])) {
+              console.log(`[work.ink:auto] Blocked ${args[0]} listener`);
+              return;
+            }
+            return Reflect.apply(target, thisArg, args);
+          }
+        });
+
+        // Trigger fake blur + visibilitychange
+        setTimeout(() => {
+          window.dispatchEvent(new Event("blur"));
+          document.dispatchEvent(new Event("visibilitychange"));
+        }, 500);
+      }
+    }
+  }, 500);
+})();
+
 }
+
 
 /*--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
                                                                                     LOCKR BYPASS
@@ -594,7 +661,3 @@ if (window.location.hostname.includes('lockr')) {
     observer.observe(document.body, { childList: true, subtree: true });
 
 })(); }
-
-
-
-

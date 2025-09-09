@@ -15,8 +15,11 @@
 // @match        *://work.ink/*
 // @match        *://*.work.ink/*
 // @match        *://lockr.so/*
+// @match        *://blox-script.com/get-key*
 // @include      *loot*
 // @include      *work.ink*
+// @include      *blox-script.com/gey-key*
+// @include      *lockr.so*
 // @run-at       document-idle
 // @icon         https://i.pinimg.com/736x/02/72/16/02721647f507c80673b1b8ac20a82de3.jpg
 // @grant        none

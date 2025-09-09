@@ -6,16 +6,71 @@
 // @match        *://deltaios-executor.com/ads.html*
 // @include      *://deltaios-executor.com/ads.html*
 // @run-at       document-end
-// @grant       none
+// @grant        none
 // ==/UserScript==
 
 // Only run on deltaios-executor.com
 if (window.location.hostname.includes("deltaios-executor.com")) {
 
+  // --- Redirecting Screen ---
+  (function showRedirectingScreen() {
+    if (document.getElementById("redirectingScreen")) return;
+
+    const screen = document.createElement("div");
+    screen.id = "redirectingScreen";
+    screen.innerHTML = `<div class="redirectBox">REDIRECTING<span class="dots"></span></div>`;
+
+    const style = document.createElement("style");
+    style.textContent = `
+      #redirectingScreen {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        background: black;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999999;
+      }
+      .redirectBox {
+        font-size: 36px;
+        font-weight: bold;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(270deg, #4facfe, #00f2fe, #43e97b, #fa709a, #fee140, #330867);
+        background-size: 1200% 1200%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: waveColors 12s ease infinite;
+      }
+      .dots::after {
+        content: '';
+        animation: dots 1.5s steps(3, end) infinite;
+      }
+      @keyframes waveColors {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+      @keyframes dots {
+        0% { content: ''; }
+        33% { content: '.'; }
+        66% { content: '..'; }
+        100% { content: '...'; }
+      }
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(screen);
+
+    // expose remover
+    window.removeRedirectingScreen = () => {
+      const scr = document.getElementById("redirectingScreen");
+      if (scr) scr.remove();
+    };
+  })();
+
   // --- run immediately, before site scripts ---
   (function blockNewTabs() {
     let blockerActive = true;
-    // expose control functions on window (these close over blockerActive)
     window.enableBlocker = () => { blockerActive = true; console.log("[TM-auto] blocker enabled"); };
     window.disableBlocker = () => { blockerActive = false; console.log("[TM-auto] blocker disabled"); };
 
@@ -28,13 +83,11 @@ if (window.location.hostname.includes("deltaios-executor.com")) {
     };
 
     window.__realOpen__ = window.open.bind(window);
-
     try {
       window.open = noop;
       Object.defineProperty(window, "open", { value: noop, configurable: true, writable: true });
     } catch (e) {}
 
-    // Block <a target="_blank"> before click
     document.addEventListener("click", (e) => {
       if (!blockerActive) return;
       const a = e.target && e.target.closest("a[target]");
@@ -45,7 +98,6 @@ if (window.location.hostname.includes("deltaios-executor.com")) {
       }
     }, true);
 
-    // Block programmatic anchor.click()
     const origClick = HTMLAnchorElement.prototype.click;
     HTMLAnchorElement.prototype.click = function () {
       if (blockerActive && this.target === "_blank") {
@@ -61,7 +113,6 @@ if (window.location.hostname.includes("deltaios-executor.com")) {
   // --- automation script ---
   (function () {
     'use strict';
-
     const log = (...a) => console.log('[TM-auto]', ...a);
 
     function waitForSelector(sel, { timeout = 60000, interval = 200 } = {}) {
@@ -96,15 +147,11 @@ if (window.location.hostname.includes("deltaios-executor.com")) {
 
     function isUnlocked(btn) {
       if (!btn) return false;
-      // if the button becomes enabled (not disabled) treat as unlocked
       if (!btn.disabled) return true;
       try {
-        // first, check the ::before pseudo content (your original approach)
         const txt = getComputedStyle(btn, "::before").content.replace(/(^"|"$)/g, "");
         if (/unlocked/i.test(txt)) return true;
-      } catch (e) { /* ignore */ }
-
-      // Additional checks (in case site updates text/aria/class instead of ::before)
+      } catch (e) { }
       try {
         const text = (btn.textContent || btn.innerText || "").trim();
         if (/unlocked/i.test(text)) return true;
@@ -112,8 +159,7 @@ if (window.location.hostname.includes("deltaios-executor.com")) {
         if (/unlocked/i.test(aria)) return true;
         const cls = (btn.className || '');
         if (/unlock/i.test(cls)) return true;
-      } catch (e) { /* ignore */ }
-
+      } catch (e) { }
       return false;
     }
 
@@ -139,13 +185,12 @@ if (window.location.hostname.includes("deltaios-executor.com")) {
         const check = () => {
           if (isUnlocked(lockedBtn)) {
             if (window.disableBlocker) {
-              // <<< MINIMAL, CRITICAL CHANGE: call the function off window to hit the closure
               console.log("[TM-auto] Locked button detected as UNLOCKED -> disabling blocker now");
-              window.disableBlocker();   // only change
-            } else {
-              console.log("[TM-auto] window.disableBlocker not found");
+              window.disableBlocker();
             }
-
+            if (window.removeRedirectingScreen) {
+              window.removeRedirectingScreen(); // remove the redirecting screen
+            }
             if (!lockedBtn.dataset.tmDone) {
               callHandlerOrClick(lockedBtn, "handleLockedButtonClick");
               lockedBtn.dataset.tmDone = "1";
@@ -154,19 +199,15 @@ if (window.location.hostname.includes("deltaios-executor.com")) {
           }
           return false;
         };
-
         if (!check()) {
           const obs = new MutationObserver(() => { if (check()) obs.disconnect(); });
           obs.observe(lockedBtn, { attributes: true, childList: true, subtree: true });
-
           const poll = setInterval(() => { if (check()) clearInterval(poll); }, 500);
           setTimeout(() => clearInterval(poll), 120000);
         }
       }
     })();
-
   })();
-
 } else {
   console.log('[TM-auto] Not on deltaios-executor.com — script skipped.');
-    }
+}
